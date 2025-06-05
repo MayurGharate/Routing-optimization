@@ -2,3 +2,4 @@ streamlit
 openrouteservice
 folium
 streamlit-folium
+streamlit-js-eval
