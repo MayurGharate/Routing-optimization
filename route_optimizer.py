@@ -1,88 +1,83 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[2]:
+
+
+import openrouteservice
+from openrouteservice import convert
+import folium
+
+
 # In[3]:
 
 
-import streamlit as st
-import openrouteservice
-import folium
-from streamlit_folium import st_folium
+client = openrouteservice.Client(key='5b3ce3597851110001cf6248fd384fc7d57149b19033e37efb7e90ec')
 
 
-# In[4]:
-
-
-client = openrouteservice.Client(key="5b3ce3597851110001cf6248fd384fc7d57149b19033e37efb7e90ec")
-
-
-# In[5]:
+# In[11]:
 
 
 locations_dict = {
-    "Chennai":        [80.2707, 13.0827],
-    "Bengaluru":      [77.5946, 12.9716],
-    "Hyderabad":      [78.4867, 17.3850],
-    "Coimbatore":     [76.9558, 11.0168],
-    "Mumbai":         [72.8777, 19.0760],
-    "Pune":           [73.8567, 18.5204],
-    "Ahmedabad":      [72.5714, 23.0225],
-    "Nagpur":         [79.0882, 21.1458],
-    "Kolkata":        [88.3639, 22.5726],
-    "Visakhapatnam":  [83.2185, 17.6868],
+    "Nashik - Plant 1":        [73.7795, 19.9425],
+    "Nashik - Plant 2":        [73.7795, 19.9425],
+    "Nashik - Tooling Centre": [73.7795, 19.9425],
+    "Nashik - Die Shop":       [73.7649, 19.9315],
+
+    "Pune - Chakan Plant":     [73.7085, 18.7557],
+    "Pune - Vasuli Plant":     [73.7200, 18.7568],
+    "Pune - Die Shop":         [73.7050, 18.7600],
+
+    "Dewas Plant":             [76.1152, 22.9672]  # Dewas - routable road point
 }
 
-st.title("🧭 Route Optimization Tool")
-st.subheader("Select Locations to Visit:")
+
+# In[12]:
+
+
+print("Select locations to visit (comma-separated numbers):\n")
+for key in locations_dict:
+    print(key)
+
+
+# In[6]:
+
+
+input_str = input("\nEnter numbers (e.g., 1,3,5,7): ")
+selected_indices = [int(i.strip()) for i in input_str.split(",")]
+
+
+# In[7]:
+
+
+selected_keys = [list(locations_dict.keys())[i - 1] for i in selected_indices]
+coordinates = [locations_dict[key] for key in selected_keys]
 
 
 # In[8]:
 
 
-selected_locations = st.multiselect(
-    "Choose locations in the order you'd like to visit (min 2):",
-    list(locations_dict.keys())
+optimized = client.directions(
+    coordinates=coordinates,
+    profile='driving-car',
+    optimize_waypoints=True,
+    format='geojson'
 )
 
 
 # In[9]:
 
 
-if len(selected_locations) >= 2:
-    coordinates = [locations_dict[loc] for loc in selected_locations]
+map_center = coordinates[0][::-1]
+m = folium.Map(location=map_center, zoom_start=6)
+folium.GeoJson(optimized).add_to(m)
 
+for key in selected_keys:
+    loc = locations_dict[key][::-1]
+    folium.Marker(location=loc, popup=key).add_to(m)
 
-# In[16]:
-
-
-try:
-    optimized = client.directions(
-        coordinates=coordinates,
-        profile='driving-car',
-        optimize_waypoints=True,
-        format='geojson'
-    )
-
-    # Create map
-    m = folium.Map(location=coordinates[0][::-1], zoom_start=6)
-    folium.GeoJson(optimized).add_to(m)
-
-    for loc in selected_locations:
-        folium.Marker(locations_dict[loc][::-1], popup=loc).add_to(m)
-
-    st.success("✅ Optimized route generated below:")
-    st_folium(m, width=725)
-
-except Exception as e:
-    st.error(f"Error during optimization: {e}")
-else:
- st.warning("Please select at least two locations to proceed.")
-
-
-# In[ ]:
-
-
-get_ipython().system('streamlit run route_optimizer.py')
+m.save("user_selected_optimized_route.html")
+print("\n✅ Route map saved as 'user_selected_optimized_route.html'")
 
 
 # In[ ]:
