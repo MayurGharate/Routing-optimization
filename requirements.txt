@@ -3,3 +3,4 @@ openrouteservice
 folium
 streamlit-folium
 streamlit-geolocation
+streamlit-bridge
